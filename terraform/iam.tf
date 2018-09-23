@@ -4,6 +4,14 @@ variable "region" {
     type = "string"
 }
 
+variable "lambda-app" {
+    type = "string"
+}
+
+resource "aws_iam_user" "developer" {
+    name = "developer"
+}
+
 provider "aws" {
       region     = "${var.region}"
 }
@@ -35,7 +43,7 @@ data "aws_iam_policy_document" "serverless" {
         "cloudformation:UpdateStack"
       ]
       resources = [
-        "arn:aws:cloudformation:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:stack/helloworld-dev/*"
+        "arn:aws:cloudformation:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:stack/${var.lambda-app}/*"
       ]
   }
   statement {
@@ -59,8 +67,8 @@ data "aws_iam_policy_document" "serverless" {
         "iam:GetUser",
       ]
       resources = [
-        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/developer",
-        "arn:aws:iam:::role/helloworld-dev-${data.aws_region.current.name}-lambdaRole",
+        "${aws_iam_user.developer.arn}",
+        "arn:aws:iam:::role/${var.lambda-app}-${data.aws_region.current.name}-lambdaRole",
       ]
   }
   statement {
@@ -87,8 +95,8 @@ data "aws_iam_policy_document" "serverless" {
         "lambda:UpdateFunctionCode",
       ]
       resources = [
-        "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:helloworld-dev-hello",
-        "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:helloworld-dev-world",
+        "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.lambda-app}-hello",
+        "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.lambda-app}-world",
       ]
   }
   statement {
@@ -108,15 +116,12 @@ data "aws_iam_policy_document" "serverless" {
       ]
       resources = [
         "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group::log-stream:",
-        "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/helloworld-dev-hello:log-stream:",
-        "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/helloworld-dev-world:log-stream:",
+        "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.lambda-app}-hello:log-stream:",
+        "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.lambda-app}-world:log-stream:",
       ]
   }
 }
 
-resource "aws_iam_user" "developer" {
-    name = "developer"
-}
 
 resource "aws_iam_policy" "serverless_policy" {
   name        = "serverless_policy"
