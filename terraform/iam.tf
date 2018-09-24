@@ -93,6 +93,7 @@ data "aws_iam_policy_document" "serverless" {
         "lambda:PublishVersion",
         "lambda:RemovePermission",
         "lambda:UpdateFunctionCode",
+        "lambda:UpdateFunctionConfiguration",
       ]
       resources = [
         "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.lambda-app}-hello",
