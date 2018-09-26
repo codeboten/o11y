@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"log"
+	"errors"
 	"os"
 	"time"
 
@@ -14,11 +14,6 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	owm "github.com/briandowns/openweathermap"
 	"github.com/honeycombio/beeline-go"
-	libhoney "github.com/honeycombio/libhoney-go"
-)
-
-var (
-	honeycombKey = "honeycombEvent"
 )
 
 type weatherRequestEvent struct {
@@ -33,15 +28,11 @@ type Response events.APIGatewayProxyResponse
 
 // Handler is our lambda handler invoked by the `lambda.Start` function call
 func Handler(ctx context.Context, event weatherRequestEvent) (Response, error) {
-	// Ensure events are sent before returning
-	ev := ctx.Value(honeycombKey).(*libhoney.Event)
+	ctx, span := beeline.StartSpan(ctx, "Handler")
+	defer span.Send()
+	span.AddField("city", event.City)
 
-	// Measure execution time
-	// startTime := time.Now()
-
-	ev.AddField("city", event.City)
-
-	result := getWeather(ev, event.City)
+	result := getWeather(ctx, event.City)
 
 	var buf bytes.Buffer
 	body, err := json.Marshal(map[string]interface{}{
@@ -66,19 +57,30 @@ func Handler(ctx context.Context, event weatherRequestEvent) (Response, error) {
 	return resp, nil
 }
 
-func getWeather(ev *libhoney.Event, city string) string {
+func getErrorMessage(ctx context.Context, err error) string {
+	_, span := beeline.StartSpan(ctx, "getError")
+	span.AddField("error", err.Error())
+	defer span.Send()
+	return err.Error()
+}
+
+func getWeather(ctx context.Context, city string) string {
 	var apiKey = os.Getenv("OWM_API_KEY")
+	ctx, span := beeline.StartSpan(ctx, "getWeather")
+	defer span.Send()
 
 	w, err := owm.NewCurrent("C", "en", apiKey)
 	if err != nil {
-		ev.AddField("error", err)
-		return "unavailable"
+		return getErrorMessage(ctx, err)
 	}
 
 	w.CurrentByName(city)
-	result := w.Weather[0].Description
-	ev.AddField("weather", result)
+	if len(w.Weather) == 0 {
+		return getErrorMessage(ctx, errors.New("City not found"))
+	}
 
+	result := w.Weather[0].Description
+	span.AddField("weather", result)
 	return result
 }
 
@@ -90,44 +92,40 @@ func main() {
 	lambda.Start(HoneycombMiddleware(Handler))
 }
 
-func addRequestProps(ctx context.Context, ev *libhoney.Event) {
+func addRequestProperties(ctx context.Context) {
 	// Add a variety of details about the HTTP request, such as user agent
 	// and method, to any created libhoney event.
-	ev.AddField("function_name", lambdacontext.FunctionName)
-	ev.AddField("function_version", lambdacontext.FunctionVersion)
+	ctx, span := beeline.StartSpan(ctx, "addRequestProperties")
+	defer span.Send()
+	span.AddField("function_name", lambdacontext.FunctionName)
+	span.AddField("function_version", lambdacontext.FunctionVersion)
 }
 
 // HoneycombMiddleware will wrap our HTTP handle funcs to automatically
 // generate an event-per-request and set properties on them.
 func HoneycombMiddleware(fn func(ctx context.Context, event weatherRequestEvent) (Response, error)) func(ctx context.Context, event weatherRequestEvent) (Response, error) {
 	return func(ctx context.Context, event weatherRequestEvent) (Response, error) {
+
 		// We'll time each HTTP request and add that as a property to
 		// the sent Honeycomb event, so start the timer for that.
 		startHandler := time.Now()
-		ev := libhoney.NewEvent()
 
-		defer func() {
-			if err := ev.Send(); err != nil {
-				log.Print("Error sending libhoney event: ", err)
-			}
-		}()
+		ctx, span := beeline.StartSpan(ctx, "HoneycombMiddleware")
+		defer span.Send()
 
-		addRequestProps(ctx, ev)
+		addRequestProperties(ctx)
 
-		// Create a context where we will store the libhoney event. We
-		// will add default values to this event for every HTTP
-		// request, and the user can access it to add their own
-		// (powerful, custom) fields.
-		newContext := context.WithValue(ctx, honeycombKey, ev)
+		// don't forget to send the events
+		defer beeline.Flush(ctx)
 
-		resp, err := fn(newContext, event)
+		resp, err := fn(ctx, event)
 		if err != nil {
-			ev.AddField("lambda.error", err)
+			span.AddField("lambda.error", err)
 		}
 
-		ev.AddField("response.status_code", resp.StatusCode)
+		span.AddField("response.status_code", resp.StatusCode)
 		handlerDuration := time.Since(startHandler)
-		ev.AddField("timers.total_time_ms", handlerDuration/time.Millisecond)
+		span.AddField("timers.total_time_ms", handlerDuration/time.Millisecond)
 		return resp, err
 	}
 }
