@@ -26,7 +26,7 @@ type weatherRequestEvent struct {
 // https://serverless.com/framework/docs/providers/aws/events/apigateway/#lambda-proxy-integration
 type Response events.APIGatewayProxyResponse
 
-// Handler is our lambda handler invoked by the `lambda.Start` function call
+// Handler is the lambda handler invoked by the `lambda.Start` function call
 func Handler(ctx context.Context, event weatherRequestEvent) (Response, error) {
 	ctx, span := beeline.StartSpan(ctx, "Handler")
 	defer span.Send()
@@ -93,21 +93,17 @@ func main() {
 }
 
 func addRequestProperties(ctx context.Context) {
-	// Add a variety of details about the HTTP request, such as user agent
-	// and method, to any created libhoney event.
+	// Add a variety of details about the lambda request
 	ctx, span := beeline.StartSpan(ctx, "addRequestProperties")
 	defer span.Send()
 	span.AddField("function_name", lambdacontext.FunctionName)
 	span.AddField("function_version", lambdacontext.FunctionVersion)
 }
 
-// HoneycombMiddleware will wrap our HTTP handle funcs to automatically
-// generate an event-per-request and set properties on them.
+// HoneycombMiddleware will wrap our lambda handle funcs to create
+// trace for events
 func HoneycombMiddleware(fn func(ctx context.Context, event weatherRequestEvent) (Response, error)) func(ctx context.Context, event weatherRequestEvent) (Response, error) {
 	return func(ctx context.Context, event weatherRequestEvent) (Response, error) {
-
-		// We'll time each HTTP request and add that as a property to
-		// the sent Honeycomb event, so start the timer for that.
 		startHandler := time.Now()
 
 		ctx, span := beeline.StartSpan(ctx, "HoneycombMiddleware")
