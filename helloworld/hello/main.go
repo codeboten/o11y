@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -14,10 +16,46 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	owm "github.com/briandowns/openweathermap"
 	"github.com/honeycombio/beeline-go"
+	"github.com/honeycombio/beeline-go/trace"
 )
 
 type weatherRequestEvent struct {
-	City string `json:"city"`
+	City   string `json:"city"`
+	Planet string `json:"planet"`
+}
+
+type weatheraryResponse struct {
+	Planet  string `json:"planet"`
+	Weather string `json:"weather"`
+}
+
+func getPlanetaryWeather(ctx context.Context, event weatherRequestEvent) string {
+	ctx, span := beeline.StartSpan(ctx, "getPlanetaryWeather")
+	b, err := json.Marshal(event)
+	if err != nil {
+		return getErrorMessage(ctx, err)
+	}
+	apiKey := os.Getenv("WEATHERARY_API_KEY")
+	apiURL := os.Getenv("WEATHERARY_API_URL")
+	url := fmt.Sprintf("%s%s", apiURL, apiKey)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
+	trc := trace.GetTraceFromContext(ctx)
+	req.Header.Set("X-Honeycomb-Trace", trc.GetRootSpan().SerializeHeaders())
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return getErrorMessage(ctx, err)
+	}
+	defer res.Body.Close()
+	r := new(weatheraryResponse)
+	err = json.NewDecoder(res.Body).Decode(r)
+
+	if err != nil {
+		return getErrorMessage(ctx, err)
+	}
+
+	defer span.Send()
+	return r.Weather
 }
 
 // Response is of type APIGatewayProxyResponse since we're leveraging the
@@ -32,7 +70,12 @@ func Handler(ctx context.Context, event weatherRequestEvent) (Response, error) {
 	defer span.Send()
 	span.AddField("city", event.City)
 
-	result := getWeather(ctx, event.City)
+	var result string
+	if len(event.Planet) > 0 {
+		result = getPlanetaryWeather(ctx, event)
+	} else {
+		result = getWeather(ctx, event.City)
+	}
 
 	var buf bytes.Buffer
 	body, err := json.Marshal(map[string]interface{}{
