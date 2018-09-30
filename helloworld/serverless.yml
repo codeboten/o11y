@@ -1,7 +1,7 @@
 service: helloworld
 frameworkVersion: ">=1.28.0 <2.0.0"
 provider:
-  name: "aws"
+  name: aws
   runtime: go1.x
 
 package:
@@ -17,6 +17,8 @@ functions:
         OWM_API_KEY: ${file(./.env.json):OWM_API_KEY}
         HONEYCOMB_KEY: ${file(./.env.json):HONEYCOMB_KEY}
         HONEYCOMB_DATASET: ${file(./.env.json):HONEYCOMB_DATASET}
+        WEATHERARY_API_KEY: ${file(./.env.json):WEATHERARY_API_KEY}
+        WEATHERARY_API_URL: ${file(./.env.json):WEATHERARY_API_URL}
     events:
       - http:
           path: hello
