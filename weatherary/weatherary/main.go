@@ -16,12 +16,15 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	owm "github.com/briandowns/openweathermap"
 	"github.com/honeycombio/beeline-go"
-	"github.com/honeycombio/beeline-go/trace"
 )
 
 type weatherRequestEvent struct {
 	City   string `json:"city"`
 	Planet string `json:"planet"`
+}
+
+type planetaryAPIBody struct {
+	Body weatheraryResponse `json:"body"`
 }
 
 type weatheraryResponse struct {
@@ -31,24 +34,26 @@ type weatheraryResponse struct {
 
 func getPlanetaryWeather(ctx context.Context, event weatherRequestEvent) string {
 	ctx, span := beeline.StartSpan(ctx, "getPlanetaryWeather")
-	b, err := json.Marshal(event)
+	//apiKey := os.Getenv("WEATHERARY_API_KEY")
+	apiURL := os.Getenv("PLANETARY_API_URL")
+	span.AddField("url", apiURL)
+	url := fmt.Sprintf("%s/%s", apiURL, event.Planet)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return getErrorMessage(ctx, err)
 	}
-	apiKey := os.Getenv("WEATHERARY_API_KEY")
-	apiURL := os.Getenv("WEATHERARY_API_URL")
-	url := fmt.Sprintf("%s%s", apiURL, apiKey)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
-	trc := trace.GetTraceFromContext(ctx)
-	req.Header.Set("X-Honeycomb-Trace", trc.GetRootSpan().SerializeHeaders())
+
+	req.Header.Set("X-Honeycomb-Trace", span.SerializeHeaders())
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
+		span.AddField("error", err)
 		return getErrorMessage(ctx, err)
 	}
 	defer res.Body.Close()
 	r := new(weatheraryResponse)
 	err = json.NewDecoder(res.Body).Decode(r)
+	span.AddField("planetary", res)
 
 	if err != nil {
 		return getErrorMessage(ctx, err)
@@ -150,6 +155,8 @@ func HoneycombMiddleware(fn func(ctx context.Context, event weatherRequestEvent)
 		startHandler := time.Now()
 
 		ctx, span := beeline.StartSpan(ctx, "HoneycombMiddleware")
+		span.AddTraceField("application", "intergalactic-weatherary")
+		span.AddTraceField("platform", "aws")
 		defer span.Send()
 
 		addRequestProperties(ctx)

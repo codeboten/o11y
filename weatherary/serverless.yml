@@ -19,6 +19,7 @@ functions:
         HONEYCOMB_DATASET: ${file(./.env.json):HONEYCOMB_DATASET}
         WEATHERARY_API_KEY: ${file(./.env.json):WEATHERARY_API_KEY}
         WEATHERARY_API_URL: ${file(./.env.json):WEATHERARY_API_URL}
+        PLANETARY_API_URL: ${file(./.env.json):PLANETARY_API_URL}
     events:
       - http:
           path: hello

@@ -1,23 +1,9 @@
+# Serverless directories
+.serverless
+.env.json
+
+# golang output binary directory
 bin
-obj
-csx
-.vs
-edge
-Publish
 
-*.user
-*.suo
-*.cscfg
-*.Cache
-project.lock.json
-
-/packages
-/TestResults
-
-/tools/NuGet.exe
-/App_Data
-/secrets
-/data
-.secrets
-appsettings.json
-local.settings.json
+# golang vendor (dependencies) directory
+vendor
