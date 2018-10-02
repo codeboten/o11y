@@ -4,8 +4,20 @@ variable "region" {
     type = "string"
 }
 
-variable "lambda-app" {
+variable "weatherary-app" {
     type = "string"
+}
+
+variable "weatherary-fn" {
+    type = "string"
+}
+
+variable "planetary-api" {
+  type = "string"
+}
+
+variable "pa-fn" {
+  type = "string"
 }
 
 resource "aws_iam_user" "developer" {
@@ -43,7 +55,8 @@ data "aws_iam_policy_document" "serverless" {
         "cloudformation:UpdateStack"
       ]
       resources = [
-        "arn:aws:cloudformation:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:stack/${var.lambda-app}/*"
+        "arn:aws:cloudformation:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:stack/${var.weatherary-app}/*",
+        "arn:aws:cloudformation:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:stack/${var.planetary-api}/*"
       ]
   }
   statement {
@@ -68,7 +81,8 @@ data "aws_iam_policy_document" "serverless" {
       ]
       resources = [
         "${aws_iam_user.developer.arn}",
-        "arn:aws:iam:::role/${var.lambda-app}-${data.aws_region.current.name}-lambdaRole",
+        "arn:aws:iam:::role/${var.weatherary-app}-${data.aws_region.current.name}-lambdaRole",
+        "arn:aws:iam:::role/${var.planetary-api}-${data.aws_region.current.name}-lambdaRole",
       ]
   }
   statement {
@@ -96,8 +110,8 @@ data "aws_iam_policy_document" "serverless" {
         "lambda:UpdateFunctionConfiguration",
       ]
       resources = [
-        "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.lambda-app}-hello",
-        "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.lambda-app}-world",
+        "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.weatherary-app}-${var.weatherary-fn}",
+        "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.planetary-api}-${var.pa-fn}",
       ]
   }
   statement {
@@ -117,8 +131,8 @@ data "aws_iam_policy_document" "serverless" {
       ]
       resources = [
         "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group::log-stream:",
-        "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.lambda-app}-hello:log-stream:",
-        "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.lambda-app}-world:log-stream:",
+        "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.weatherary-app}-${var.weatherary-fn}:log-stream:",
+        "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.planetary-api}-${var.pa-fn}:log-stream:",
       ]
   }
 }

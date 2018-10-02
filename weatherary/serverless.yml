@@ -1,4 +1,4 @@
-service: helloworld
+service: weatherary
 frameworkVersion: ">=1.28.0 <2.0.0"
 provider:
   name: aws
@@ -11,8 +11,8 @@ package:
    - ./bin/**
 
 functions:
-  hello:
-    handler: bin/hello
+  weatherary:
+    handler: bin/weatherary
     environment:
         OWM_API_KEY: ${file(./.env.json):OWM_API_KEY}
         HONEYCOMB_KEY: ${file(./.env.json):HONEYCOMB_KEY}
@@ -22,5 +22,5 @@ functions:
         PLANETARY_API_URL: ${file(./.env.json):PLANETARY_API_URL}
     events:
       - http:
-          path: hello
+          path: weatherary
           method: get
