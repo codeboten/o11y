@@ -1,0 +1,16 @@
+{
+  "name": "station-mars",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "serverless.com",
+  "license": "MIT",
+  "devDependencies": {
+    "async_hooks": "^1.0.0",
+    "honeycomb-beeline": "^1.1.2",
+    "serverless-google-cloudfunctions": "^1.2.0"
+  }
+}
