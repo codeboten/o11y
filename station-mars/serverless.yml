@@ -6,6 +6,9 @@ provider:
   project: station-mars
   # the path to the credentials file needs to be absolute
   credentials: ~/.gcloud/station.json
+  environment:
+      HONEYCOMB_KEY: ${file(../.env.json):HONEYCOMB_KEY}
+      HONEYCOMB_DATASET: ${file(../.env.json):HONEYCOMB_DATASET}
 
 plugins:
   - serverless-google-cloudfunctions
@@ -17,12 +20,41 @@ package:
     - node_modules/**
     - .gitignore
     - .git/**
+  include:
+    - node_modules/array-flatten/**
+    - node_modules/honeycomb-beeline/**
+    - node_modules/libhoney/**
+    - node_modules/ms/**
+    - node_modules/superagent/**
+    - node_modules/urljoin/**
+    - node_modules/util-deprecate/**
+    - node_modules/uuid/**
+    - node_modules/asynckit/**
+    - node_modules/combined-stream/**
+    - node_modules/component-emitter/**
+    - node_modules/cookiejar/**
+    - node_modules/core-util-is/**
+    - node_modules/debug/**
+    - node_modules/delayed-stream/**
+    - node_modules/extend/**
+    - node_modules/form-data/**
+    - node_modules/formidable/**
+    - node_modules/inherits/**
+    - node_modules/isarray/**
+    - node_modules/methods/**
+    - node_modules/mime/**
+    - node_modules/mime-db/**
+    - node_modules/mime-types/**
+    - node_modules/on-headers/**
+    - node_modules/process-nextick-args/**
+    - node_modules/qs/**
+    - node_modules/readable-stream/**
+    - node_modules/safe-buffer/**
+    - node_modules/shimmer/**
+    - node_modules/string_decoder/**
 
 functions:
   first:
     handler: http
-    environment:
-        HONEYCOMB_KEY: ${file(../.env.json):HONEYCOMB_KEY}
-        HONEYCOMB_DATASET: ${file(../.env.json):HONEYCOMB_DATASET}
     events:
       - http: path
