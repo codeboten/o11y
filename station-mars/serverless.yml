@@ -6,6 +6,7 @@ provider:
   project: station-mars
   # the path to the credentials file needs to be absolute
   credentials: ~/.gcloud/station.json
+  region: us-central1
   environment:
       HONEYCOMB_KEY: ${file(../.env.json):HONEYCOMB_KEY}
       HONEYCOMB_DATASET: ${file(../.env.json):HONEYCOMB_DATASET}
