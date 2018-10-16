@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -51,6 +52,15 @@ func getPlanetaryWeather(ctx context.Context, event weatherRequestEvent) string 
 		return getErrorMessage(ctx, err)
 	}
 	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		span.AddField("upstreamError", res.StatusCode)
+		bodyBytes, _ := ioutil.ReadAll(res.Body)
+		message := string(bodyBytes)
+		span.AddField("upstreamBody", message)
+		return getErrorMessage(ctx, fmt.Errorf("%d - %s", res.StatusCode, message))
+	}
+
 	r := new(weatheraryResponse)
 	err = json.NewDecoder(res.Body).Decode(r)
 	span.AddField("planetary", res)
@@ -97,8 +107,7 @@ func Handler(ctx context.Context, event weatherRequestEvent) (Response, error) {
 		IsBase64Encoded: false,
 		Body:            buf.String(),
 		Headers: map[string]string{
-			"Content-Type":           "application/json",
-			"X-MyCompany-Func-Reply": "hello-handler",
+			"Content-Type": "application/json",
 		},
 	}
 
