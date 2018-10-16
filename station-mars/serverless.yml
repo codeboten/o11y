@@ -10,6 +10,7 @@ provider:
   environment:
       HONEYCOMB_KEY: ${file(../.env.json):HONEYCOMB_KEY}
       HONEYCOMB_DATASET: ${file(../.env.json):HONEYCOMB_DATASET}
+      PLANET: mars
 
 plugins:
   - serverless-google-cloudfunctions

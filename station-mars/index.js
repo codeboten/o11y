@@ -5,12 +5,39 @@ var beeline = require("honeycomb-beeline")({
   dataset: process.env.HONEYCOMB_DATASET
 });
 
+var application = "station-api";
+var platform = "gcp";
+
+function getRandomInt(max) {
+  return Math.floor(Math.random() * Math.floor(max));
+}
+
+function contactWeatherStation(planet) {
+  weatherReports = [
+    "it's kinda cold here",
+    "nothing but red skies today",
+    "better stay inside the biodome today"
+  ]
+
+  return weatherReports[getRandomInt(weatherReports.length)]
+}
+
+function getWeather(planet) {
+  let span = beeline.startSpan({
+    application: application,
+    platform: platform,
+    name: "getWeather",
+    planet
+  });
+  beeline.finishSpan(span);
+  return contactWeatherStation(planet);
+}
 
 // startTrace returns a trace object
 function startTrace(req) {
   let traceInfo = {
-    application: "station-api",
-    platform: "gcp",
+    application: application,
+    platform: platform,
     name: "handleRequest"
   };
 
@@ -29,10 +56,10 @@ function startTrace(req) {
 
 exports.http = (request, response) => {
   let trace = startTrace(request);
-
+  let planet = process.env.PLANET
   let output = {
-    planet: "mars",
-    weather: "it's kinda cold here"
+    planet: planet,
+    weather: getWeather(planet)
   };
 
   beeline.finishTrace(trace);
