@@ -20,6 +20,14 @@ variable "pa-fn" {
   type = "string"
 }
 
+variable "jupiter-app" {
+  type = "string"
+}
+
+variable "conditions-fn" {
+  type = "string"
+}
+
 resource "aws_iam_user" "developer" {
     name = "developer"
 }
@@ -52,11 +60,13 @@ data "aws_iam_policy_document" "serverless" {
         "cloudformation:DescribeStackEvents",
         "cloudformation:CreateStack",
         "cloudformation:DeleteStack",
-        "cloudformation:UpdateStack"
+        "cloudformation:UpdateStack",
+        "cloudformation:ListStackResources"
       ]
       resources = [
         "arn:aws:cloudformation:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:stack/${var.weatherary-app}/*",
-        "arn:aws:cloudformation:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:stack/${var.planetary-api}/*"
+        "arn:aws:cloudformation:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:stack/${var.planetary-api}/*",
+        "arn:aws:cloudformation:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:stack/${var.jupiter-app}/*"
       ]
   }
   statement {
@@ -83,6 +93,7 @@ data "aws_iam_policy_document" "serverless" {
         "${aws_iam_user.developer.arn}",
         "arn:aws:iam:::role/${var.weatherary-app}-${data.aws_region.current.name}-lambdaRole",
         "arn:aws:iam:::role/${var.planetary-api}-${data.aws_region.current.name}-lambdaRole",
+        "arn:aws:iam:::role/${var.jupiter-app}-${data.aws_region.current.name}-lambdaRole",
       ]
   }
   statement {
@@ -112,6 +123,7 @@ data "aws_iam_policy_document" "serverless" {
       resources = [
         "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.weatherary-app}-${var.weatherary-fn}",
         "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.planetary-api}-${var.pa-fn}",
+        "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.jupiter-app}-${var.conditions-fn}",
       ]
   }
   statement {
@@ -133,6 +145,7 @@ data "aws_iam_policy_document" "serverless" {
         "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group::log-stream:",
         "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.weatherary-app}-${var.weatherary-fn}:log-stream:",
         "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.planetary-api}-${var.pa-fn}:log-stream:",
+        "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.jupiter-app}-${var.conditions-fn}:log-stream:",
       ]
   }
 }
