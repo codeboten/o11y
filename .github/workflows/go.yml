@@ -1,0 +1,17 @@
+name: Go
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: codeboten/github-action-to-otlp@v1
+      with:
+        endpoint: 'ingest.lightstep.com:443'
+        headers: "lightstep-access-token:${{ secrets.ACCESS_TOKEN }}"
